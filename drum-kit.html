@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Drum Kit</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            color: #ffd700;
+            margin-bottom: 2rem;
+        }
+
+        .keys {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .key {
+            border: 4px solid #ffd700;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.07s ease;
+            background: rgba(0, 0, 0, 0.4);
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .playing {
+            transform: scale(1.1);
+            border-color: #fff;
+            box-shadow: 0 0 20px #ffd700;
+        }
+
+        .key-letter {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .sound {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #ddd;
+        }
+
+        .instructions {
+            margin-top: 2rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Virtual Drum Kit</h1>
+        
+        <div class="keys">
+            <div data-key="65" class="key">
+                <div class="key-letter">A</div>
+                <div class="sound">Clap</div>
+            </div>
+            <div data-key="83" class="key">
+                <div class="key-letter">S</div>
+                <div class="sound">Hihat</div>
+            </div>
+            <div data-key="68" class="key">
+                <div class="key-letter">D</div>
+                <div class="sound">Kick</div>
+            </div>
+            <div data-key="70" class="key">
+                <div class="key-letter">F</div>
+                <div class="sound">Openhat</div>
+            </div>
+            <div data-key="71" class="key">
+                <div class="key-letter">G</div>
+                <div class="sound">Boom</div>
+            </div>
+            <div data-key="72" class="key">
+                <div class="key-letter">H</div>
+                <div class="sound">Ride</div>
+            </div>
+            <div data-key="74" class="key">
+                <div class="key-letter">J</div>
+                <div class="sound">Snare</div>
+            </div>
+            <div data-key="75" class="key">
+                <div class="key-letter">K</div>
+                <div class="sound">Tom</div>
+            </div>
+            <div data-key="76" class="key">
+                <div class="key-letter">L</div>
+                <div class="sound">Tink</div>
+            </div>
+        </div>
+
+        <p class="instructions">
+            Press keys A-L to play drums or click/tap the buttons
+        </p>
+    </div>
+
+    <script>
+        // Create AudioContext when user interacts
+        let audioContext = null;
+
+        // Audio buffer data for each sound
+        const audioBuffers = {};
+        
+        // Sound file URLs (using placeholder paths - replace with actual audio files)
+        const soundUrls = {
+            65: '/api/placeholder/1/1', // A - Clap
+            83: '/api/placeholder/1/1', // S - Hihat
+            68: '/api/placeholder/1/1', // D - Kick
+            70: '/api/placeholder/1/1', // F - Openhat
+            71: '/api/placeholder/1/1', // G - Boom
+            72: '/api/placeholder/1/1', // H - Ride
+            74: '/api/placeholder/1/1', // J - Snare
+            75: '/api/placeholder/1/1', // K - Tom
+            76: '/api/placeholder/1/1'  // L - Tink
+        };
+
+        // Initialize audio context and load sounds
+        async function initAudio() {
+            if (audioContext) return;
+            
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Load all sound files
+            for (const [key, url] of Object.entries(soundUrls)) {
+                try {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    audioBuffers[key] = await audioContext.decodeAudioData(arrayBuffer);
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                }
+            }
+        }
+
+        // Play sound function
+        function playSound(keyCode) {
+            if (!audioContext) {
+                initAudio();
+                return;
+            }
+
+            const buffer = audioBuffers[keyCode];
+            if (!buffer) return;
+
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+        }
+
+        // Add visual feedback
+        function addPlayingClass(element) {
+            element.classList.add('playing');
+        }
+
+        // Remove visual feedback
+        function removePlayingClass(e) {
+            if (e.propertyName !== 'transform') return;
+            this.classList.remove('playing');
+        }
+
+        // Handle keyboard input
+        window.addEventListener('keydown', e => {
+            const key = document.querySelector(`.key[data-key="${e.keyCode}"]`);
+            if (!key) return;
+
+            playSound(e.keyCode);
+            addPlayingClass(key);
+        });
+
+        // Handle mouse/touch input
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(key => {
+            key.addEventListener('click', function() {
+                const keyCode = this.getAttribute('data-key');
+                playSound(keyCode);
+                addPlayingClass(this);
+            });
+
+            key.addEventListener('transitionend', removePlayingClass);
+        });
+    </script>
+</body>
+</html>
